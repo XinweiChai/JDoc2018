@@ -1,0 +1,172 @@
+\documentclass[en]{jdoc}
+% gestion des couleurs
+\usepackage{color} 
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{jdocgreen}{HTML}{005522}
+% gestion des liens hypertextes avec couleur
+\usepackage[colorlinks=true,urlcolor=jdocgreen,citecolor=jdocgreen]{hyperref}                     
+% utilisation de la police times (Ã  supprimer Ã©ventuellement)
+\usepackage{times}
+% pour les URL
+\usepackage{ulem}
+\usepackage{tikz}
+\newtheorem{definition}{Definition}
+
+\newcommand{\acm}[3]{#1\rightarrow#2}
+\newcommand{\ac}[3]{$#1\rightarrow#2$}
+\newcommand{\omesi}{^\omega_\varsigma}
+\input{macros}
+\input{macros-ph}
+\input{macros-abstr}
+\input{tikzstyles2}
+
+
+\ed{COMUE L'UNAM\\\'Ecole Doctorale STIM\\Sciences et Technologies de\\l'Information et 
+Math\'ematiques} 
+\spec{Informatique}
+
+\labo{LS2N}
+\equipe{MeForBio}
+
+\title{Study of Reachability Problem via Static Analysis and Answer Set Programming}
+\author{Xinwei Chai}
+\email{xinwei.chai@ls2n.fr}
+
+\begin{document}
+
+\makehead
+
+\begin{abstract}
+On demand of efficient reachability analysis due to the inevitable complexity of large-scale biological models, we designed an analysis for reachability problem of our new framework, Asynchronous Binary Automata Networks (ABAN). ABAN is an expressive modeling framework which contains all the dynamics behaviors performed by Asynchronous Boolean Networks. Compared to Boolean Networks (BN), ABAN has a finer description of state transitions (from a local state to another, instead of symmetric Boolean functions). To analyze the reachability properties on large-scale models (like the ones from systems biology), previous works exhibited an efficient abstraction technique called Local Causality Graph (LCG). However, this technique may be not conclusive. Our contribution here is to extend these results by tackling those complex intractable cases \textit{via} a heuristic technique. To validate our method, tests were conducted in large biological networks, showing that our method is more conclusive than existing ones.
+\end{abstract}
+
+\begin{keywords}
+Asynchronous Binary Automata Networks, Local Causality Graph, heuristic
+\end{keywords}
+
+\begin{collaborations}
+Tony Ribeiro and Katsumi Inoue from National Institute of Informatics, Japan
+\end{collaborations}
+
+\section{Introduction}
+With increasing quantities of available data provided by new technologies, \textit{e.g.} DNA microarray \cite{marx2013}, there is a growing need for expressive modelings and their related high-performance analytic tools. Among them, works on concurrent systems have been of interest for systems biology for over a decade \cite{bortolussi2008modeling,wiley2003computational}. If model validation is a major concern, one of the main challenges nowadays is also behavior prediction of these systems. 
+
+%State of the art
+Reachability problem on formal models is a critical challenge where both validation (whether the model satisfies \textit{a priori} knowledge) and prediction (properties to be discovered) problem meet. From a formal point of view, numerous biological properties can be expressed in computation models as reachability properties. 
+Reachability has been of great interest in the domain of Model-Checking for over 30 years \cite{clarke20142} and various modelings and semantics in bioinformatics have been studied: Boolean network \cite{akutsu2007control}, Petri nets \cite{mayr1984,esparza1998}, timed-automata\cite{Daws1998,wozna2003}. These approaches rely on global search and thus face state explosion problem as the state space grows exponentially with the number of components of model.
+
+Abstraction is an efficient strategy to deal with such systems. It mainly consists in approximating the model while keeping the most important parts.
+Abstract methods often have better time-space performance but with a loss of information. They solve usually the simplified version of original problem, i.e. the results from these approaches are not necessarily compatible with original model.
+Static analysis is a sort of abstraction for reachability problems where local properties of the model are exploited to avoid global search. 
+
+%Related work
+Paulev\'e \textit{et al.} \cite{folschette2015,pauleve2012} have proposed new discrete modeling frameworks for a concurrent system: Automata Network (AN). They provide an approach to address this issue by designing a static abstraction, Local causality Graph (LCG). It drastically reduces the state-space and avoids costly global search. However this pure static analysis is not complete as there are inconclusive cases which can not be decided reachable or not.
+
+
+%Contribution
+We propose a hybrid approach based on former LCG reasoning and a partial search in the LCG to have more conclusive solutions on reachability problems. Our approach allows to solve cases where other static methods fail.
+\section{Main Work}
+Asynchronous Binary Automata Network (ABAN) is a special case of Automata Network, it can be considered as a subset of communicating finite state machines or safe Petri Nets. Binary implies that every automaton has possible states $(0,1)$ and asynchronous implies that no more than one automaton can change its value at a time.
+
+\begin{definition}[ABAN]
+An ABAN is a triplet $AB = (\mathbf{\Sigma},\mathbf{L},\mathbf{T})$, where:
+\begin{itemize}
+\item $\mathbf{\Sigma}\triangleq\{a,b,\ldots,z\}$ is the finite set of automata with every component having a Boolean value;
+\item $L_a\triangleq\{a_0,a_1\}$ is the set of states of automaton $a\in \mathbf{\Sigma}$, $\mathbf{LS}=\underset{a\in \mathbf{\Sigma}}{\cup} L_a$ is the set of all \textbf{local states}, and $\mathbf{L}\triangleq \underset{a\in \mathbf{\Sigma}}{\times} L_a$ is the set of \textbf{global states}, the state of automaton a at state s is denoted $s[a]=a_i$;
+\item $\mathbf{T}\triangleq \{A\rightarrow b_i\mid b\in \mathbf{\Sigma} \land A\in \mathbf{L}\}$ is the set of transitions, where $A$ is the states required by the transition, which allows to flip $b_i$ to the other Boolean state. Transition $tr=\acm{A}{b_j}{b_k}$ is said firable iff $A\subseteq s$.%, denoted by $reach(tr)=1$. 
+\end{itemize}
+\end{definition}
+
+To be more intuitive, local states represent the states of individual automata, e.g. $a_1$, while global states represent the joint states of all automata, e.g. $\langle a_0, b_1,c_0 \rangle$ where $\mathbf{L}=\{a,b,c\}$. Furthermore, to describe the evolution of an ABAN, we take the notion of trajectory:
+\begin{definition}[Trajectory]
+Given global initial state $s\in \mathbf{L}$ and global final state $\Omega\in \mathbf{L}$, a trajectory $t$ from $s$ to $\Omega$ is a sequence of transitions in $\mathbf{T}$ that can be fired successively. Analogously, the trajectory $t$ from $s$ to a local final state $\omega\in L_a$ is also defined.%The set of all trajectories from $s$ is denoted $\mathbf{Tr} (s)$.
+\end{definition}
+
+From $s$, the global state after firing $t$ is denoted $s\cdot t$ and the state of a certain automaton $a$ is noted $(s\cdot t)[a]$.
+Fig \ref{exampleABAN} shows an example of ABAN, with initial state $s=\langle a_0,b_0,c_0,d_0,e_0\rangle$ and a possible trajectory is $t=\acm{\{d_0\}}{b_0}{b_1}::\acm{\{b_1\}}{d_0}{d_1}::\acm{\{d_1\}}{c_0}{c_1}::\acm{\{b_1,c_1\}}{a_0}{a_1}$. After firing $t$, state becomes $\Omega=s\cdot t=\langle a_1,b_1,c_1,d_1,e_0\rangle$, and $\omega= a_1= (s\cdot t)[a]$.
+
+\begin{figure}[ht]
+\centering
+\input{exampleAN}
+\caption{Example of ABAN}\label{exampleABAN}
+\end{figure}
+As to the reachability problem, local state $\omega=a_i$ is reachable iff there exists a trajectory $t$ such that $(s\cdot t)[a]=a_i$, denoted $reach (\omega)$ and takes Boolean values true or false. In Fig \ref{exampleABAN}, we can see $\Omega=\langle a_1,b_1,c_1,d_1,e_0\rangle$ or $\omega=a_1$ is reachable from initial state $s$ \textit{via} trajectory $t$, that is $reach(a_1)=\text{true}$.
+
+LCG abstracts the original problem through a necessary condition a sufficient condition. It is a very efficient tool as there is no global search and all the operations are bounded in polynomial complexity \cite{pauleve2012}. However LCG does not guarantee a result, i.e. some inconclusive instances satisfy the necessary condition and fail sufficient conditions. We make use of LCG by removing some elements needed only in multivalued networks, then we try to analyze it deeply to solve inconclusive cases.
+\begin{definition}[LCG]\label{defLCG}
+Given ABAN $A = (\mathbf{\Sigma},\mathbf{L},\mathbf{T})$, initial state $\varsigma$ and a desired local state $\omega$, LCG $A\omesi= (V\omesi,E\omesi)$ is the smallest recursive structure with $V\omesi \subseteq V_{\text{state}}\cup V_{\text{solution}}$ and $E\omesi \subseteq V\omesi\times V\omesi$ which satisfies:
+\begin{eqnarray*}
+\omega&\subseteq& V\omesi \\
+a_i\in V\omesi\cap V_{\text{state}} &\Leftrightarrow& \{ (a_i, sol_{a_i})| a_i\in \varsigma\}\subseteq E\omesi \\
+sol_{a_i}\in V\omesi \cap V_{\text{solution}}&\Leftrightarrow& \{ (sol_{a_i},\mathbf{V}_a (sol_{a_i})\}\subseteq E\omesi
+\end{eqnarray*}
+Notations: $V_{\text{solution}}$ is the set of solutions and $\mathbf{V}$ is the set of required local states of $sol_{a_i}$.
+\end{definition}
+
+\begin{figure}[ht]
+    \centering
+    \input{LCGexampleAN.tex}
+    \caption{LCG for analysis $reach(a_1)$ in Fig. \ref{exampleABAN}, with the squares representing local states and small circles representing solution nodes, $a_1$ is reachable because $\{b_1,c_1\}$ is reachable}
+    \label{LCGexample}
+\end{figure}
+
+To give a raw idea, when the recursive construction is complete, LCG is a digraph with state nodes $V_{\text{state}}$ and solution nodes $V_{\text{solution}}$. $E$ consists of the links between state nodes and solution nodes. To access certain local states, at least one of its successive solution nodes (corresponding transitions form solution nodes) need to be fired, i.e. state nodes are \textbf{OR gates}; similarly, to make one solution node firable, all of its successive state nodes need to be reached simultaneously, i.e. solution nodes are \textbf{AND gates}. A recursive reasoning of reachability begins with a state node representing desired target state, go through $a_i\mapsto sol_{a_i}\mapsto b_j \cdots$ and ends with initial state (reachable) or a local state without solution successor (unreachable). The first step analysis is in Definition \ref{defPseudoReach}.
+
+\begin{definition}[Pseudo-reachability \& Firability]
+Given an LCG $l=(V_{\text{solution}},V_{\text{state}}, E)$, the pseudo-reachability of node $v\in V_{\text{state}}$ is defined as 
+$r'(v)=\bigvee_{(s,sol) \in E} \text{firable}(sol)$, with $\text{firable}(sol)=\bigwedge_{(sol,s)\in E} r'(s)$
+\end{definition}\label{defPseudoReach}
+LCG shows the dependencies between local states and transitions. A pathway in LCG suggests a possible trajectory of reaching the target state. A necessary condition of reachability can be checked very quickly before the whole program. If this check fails, the reachability of target state is false.
+
+However the pseudo-reachability is not enough for the real reachability, as there are potentially self-dependent structures which impedes the reachability, e.g. we are not sure in Fig. \ref{exampleABAN} $b_1$ and $c_1$ can be reached simultaneously.
+
+\section{Analysis of Reachability using ASP}
+We use ASP  (Answer Set Programming) \cite{baral2003knowledge} to analyze the LCG after precondition. ASP uses description and constraints of the problem (called rule) instead of the imperative orders. ASP solver tackles problems by generating all the possibilities respecting the constraints. A rule is in the following form:
+
+$$a_0 \gets a_1 , \ldots , a_m, not\ a_{m+1}, \ldots , not\ a_n.$$
+where $a_0$ is true if $a_1 , \ldots , a_m$ are true and $a_{m+1}, \ldots , a_n$ are false. Some special rules are noteworthy. A rule where $m = n = 0$ is called a fact and is useful to represent data because the left-hand atom $a_0$ is thus always true. It is often written without the central arrow. On the other hand, a rule where $n > 0$ and $a_0 = \varnothing$ is called a constraint. As $\varnothing$ can never become true, if the right-hand side of a constraint is true, this invalidates the whole solution. Constraints are thus useful to filter out unwanted solutions.
+
+Programs can yield no answer set, one answer set, or several answer sets. For example, the following program:   produces two answer sets: $\{b\}$ and $\{c\}$. Indeed, the absence of $c$ makes $b$ true, and conversely absence of $b$ makes $c$ true.
+\subsection{Encoding}
+
+To encode the reachability problem in ASP, we describe first the facts:
+
+Predicate \texttt{init(a,i)} defines the automaton $a$ is at initial state $i$. %\texttt{comp(n,a,i)} shows the joint state $a_i$ needed for transition No.$n$. \texttt{transition(n,b,j)} shows the transition No.$n$ allows the automaton $b$ change to state $j$.
+Predicate \texttt{node(a,i,n)} shows the node $a_i$ in the LCG is numbered $n$, \texttt{parent(n1,n2)} expresses node No.$n_1$ is the predecessor of No.$n_2$, \texttt{prior(N1,N2)} means $N_1$ appears earlier than $N_2$.
+
+The rough idea is: If an automaton $a$ of different states appear, $a_0$ and $a_1$. The one which in initial state (suppose $a_0$) must be used in some transition before flipping ($a_1$), otherwise there is no transition in the LCG which allows $a_1$ return to $a_0$. In another way, the predecessor of $a_0$ must appear before $a_1$. \texttt{Core rule} describes this constraint.
+
+\begin{verbatim}
+prior(N1,N2) :- parent(N2,N1).% A node appears always earlier than its predecessor
+prior(N1,N3) :- prior(N1,N2), prior(N2,N3).%Transitivity
+prior(N1,N2) :- node(P1,S1,N1), node(P2,S2,N2), node(P2,S3,N3), 
+                parent(N1,N3), init(P2,S3), S2!=S3, P1!=P2. %Core rule
+\end{verbatim}
+\section{Overall Algorithm}
+{\bf LACG} is an algorithm checking the reachability of a target state from an initial state in a given ABAN. By combining static analysis and stochastic search techniques it can prove reachability or unreachability as follows:
+\uline{{\bf LACG}: Local Asynchronous Causality Graph}
+\begin{itemize}
+    \item Input: An Automata Network $A$ and 2 partial state $init, target$, maximum iterations $k$ 
+    \item Output: UNREACHABLE, REACHABLE, INCONCLUSIVE
+\end{itemize}
+\begin{enumerate}
+    \item Construct the LCG $l=LCG(A,target)$
+    \item Compute $r'(target)$ in $l$, return UNREACHABLE if $r'=False$
+    \item Delete all cycles and prune useless branches from $l$
+    \item Try at most $k$ times
+    \begin{itemize}
+    \item $l'\gets l$
+    \item  Transform randomly each OR gate $O$ of $l'$ into simple gate
+    \item Generate all trajectories $t$ to reach $target$ in $l$ using ASP
+    \begin{itemize}
+        \item If a valid $t$ is found, return REACHABLE
+    \end{itemize}
+    \end{itemize}
+    \item return INCONCLUSIVE
+\end{enumerate}
+\section{Conclusion}
+We proposed an expressive formalism ABAN to study the reachability problem. The original approach LCG has limited conclusiveness because static and local reasoning does not simulate all real system dynamics. Due to the complexity of global search, developing a heuristic technique based on sub-states becomes a feasible choice. The heuristic method reproduces the system dynamics by traversing possible orders of transitions. This ``dynamic tentative'' makes it closer to real dynamics than LCG is.
+In the reasoning of AND gates, the computation on permutations is expensive but is still not conclusive enough. To speed up the whole procedure and improve the conclusiveness, we used Answer Set Programming (ASP) to refine the analysis of transition orders ($\triangleright$) in the same fork and those across forks. For future work, we contemplate the extension of our heuristic technique to multivalued models.
+\bibliography{biblio}
+
+\end{document}
