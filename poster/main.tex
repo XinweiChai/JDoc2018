@@ -37,7 +37,7 @@
 
 %-- Title and authors of the poster ------------------------------------------
 \title{% Poster title
-  \Huge{\textbf{Study of Reachability Problem}}
+  \Huge{\textbf{A Hybrid Analysis for Reachability Problem}}
 }
 
 \author{% Author
@@ -55,11 +55,11 @@
 \newsavebox{\myLst}
 \begin{lrbox}{\myLst}
 \begin{lstlisting}[frame=L]
-% A node appears always earlier than its predecessor
+% Rule 1, a node appears always earlier than its predecessor
 prior(N1,N2):-parent(N2,N1).
-%Transitivity
+%Rule 2, transitivity
 prior(N1,N3):-prior(N1,N2),prior(N2,N3).
-%Core rule
+%Rule 3, core rule
 prior(N1,N2):-node(P1,S1,N1),node(P2,S2,N2),node(P2,S3,N3),
               parent(N1,N3), init(P2,S3), S2!=S3, P1!=P2. 
 \end{lstlisting}
@@ -114,14 +114,14 @@ The interest of this technique is to have a better conclusiveness than former st
 
 \begin{figure}
     \centering
-    \input{exampleAN.tex}
-    \caption{Visualization of ABAN consisting of 5 automata, the gray circles shows the initial state, while the arrows shows the transition, with the conditions of the transition in the braces, e.g. $b_1$ means automaton $b$ in state 1}
+    \input{AN_limitation.tex}
+    \caption{Visualization of ABAN consisting of 3 automata, the gray circles shows the initial state, while the arrows shows the transition, with the conditions of the transition in the braces, e.g. $b_1$ means automaton $b$ is in state 1}
     \label{fig:my_label}
 \end{figure}
 
 \begin{figure}
     \centering
-    \input{LCGexampleAN.tex}
+    \input{LCG_limitation.tex}
     \caption{Visualization of the LCG for analyzing the reachability of $a_1$, with the squares representing local states and small circles representing solution nodes}
 \end{figure}
 Sole analysis done by LCG leads to inconclusive results, as it checks only the causality of the target state, but is not sure whether there exists a pathway from the initial state to the target state.
@@ -140,6 +140,8 @@ It uses description and constraints of the problem instead of the imperative ord
 \end{block}
 
 \usebox{\myLst} % Source code
+
+For the LCG just shown, Rule 1 gives $b_1\rhd a_1$, $c_1\rhd a_1$, $c_0\rhd b_1$, $b_0\rhd c_1$; Rule 2 gives $c_0\rhd a_1$ and $b_0\rhd a_1$; Rule 3 gives $a_1\rhd b_1$ and $b_1\rhd a_1$ which is impossible, such that there does not exist a trajectory to reach $a_1$ from initial state.
 
 \section{Result and discussions}
 We take models of $\lambda$-phage \cite{thieffry1995dynamical} (4 components and 12 transitions), T-cell Receptor (TCR) \cite{saez2007logical} (95 components and 206 transitions) and epidermal growth factor receptor (EGFR) (104 components and 389 transitions) \cite{samaga2009logic} as examples. In every model, we take several automata as input, varying exhaustively their initial states combinations ($2^{|initialStates|}$), take the reachability of the states of some automata as output. We first test the performance of traditional model checkers, in which Mole turns out to be timeout for 6 in 12 outputs, and all timeout for NuSMV in model EGFR. When it comes to Pint, a static model checker, it fails on some instances (Inconclusive) but our approach \textbf{always} find the pathway towards the target state.
@@ -169,9 +171,6 @@ We take models of $\lambda$-phage \cite{thieffry1995dynamical} (4 components and
   \caption{Benchmark on different models, timeout for traditional models and thus not listed}
   }
 \end{table}
-
-
-
 
 \section{Ongoing and Future Work}
 For now, we are collaborating with a tool for model inference LFIT using machine learning technique \cite{inoue2014learning}, verifying the results of LFIT whether they are consistent with \textit{a priori} knowledge.
